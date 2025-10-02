@@ -130,6 +130,7 @@
             const encodedText = encodeURIComponent(text);
             const apiUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=zh-CN&client=tw-ob`;
             currentAudio = new Audio(apiUrl);
+            currentAudio.playbackRate = 1.2;
             if (onEndCallback) {
                 currentAudio.addEventListener('ended', onEndCallback, { once: true });
             }
@@ -157,12 +158,12 @@
             synth.triggerAttackRelease("C6", "16n");
         }
         
-        function initializeAudio() {
+        async function initializeAudio() {
             if(isAudioInitialized) return;
-            isAudioInitialized = true;
             
-            // 使用者互動後啟動Tone.js
-            Tone.start();
+            await Tone.start();
+            console.log("音訊上下文已成功啟動！");
+            isAudioInitialized = true;
              
             synth = new Tone.Synth({
                 oscillator: { type: "sine" },
@@ -175,6 +176,10 @@
                 volume: -20,
                 fadeIn: 2,
             }).toDestination();
+            
+            if(backgroundMusic && backgroundMusic.state !== "started") {
+                backgroundMusic.start();
+            }
         }
         // --- 音效程式碼結束 ---
 
@@ -200,12 +205,12 @@
             let mnemonicQuestion;
             if (mnemonic.includes('得')) {
                 const questionPartEnd = mnemonic.indexOf('得') + 1;
-                mnemonicQuestion = mnemonic.substring(0, questionPartEnd) + '?';
+                mnemonicQuestion = mnemonic.substring(0, questionPartEnd) + '？';
             } else {
-                mnemonicQuestion = mnemonic.slice(0, 2) + '?';
+                mnemonicQuestion = mnemonic.slice(0, 2) + '？';
             }
             quizQuestionEl.textContent = `${currentNum1} × ${currentNum2} = ?`;
-            quizMnemonicHintEl.textContent = `${mnemonicQuestion}？`;
+            quizMnemonicHintEl.textContent = mnemonicQuestion;
             quizAnswerEl.value = '';
             quizAnswerEl.disabled = false;
             checkAnswerBtn.disabled = false;
@@ -231,27 +236,28 @@
                 checkAnswerBtn.disabled = true;
                 speak(fullMnemonic, () => speak("太棒了！"));
             } else {
-                playIncorrectSound();
+                // **關鍵修復**：重新排序操作以確保穩定性
+                // 1. 首先，立即顯示視覺回饋
                 quizFeedbackEl.textContent = '不對喔，再想一想！🤔';
                 quizFeedbackEl.className = 'mt-4 text-lg h-8 text-amber-400 font-bold';
+                
+                // 2. 播放語音提示
                 speak("不對喔，再想一想");
+
+                // 3. 最後才播放可能會出錯的音效
+                playIncorrectSound();
+                
+                // 4. 清空輸入框
                 quizAnswerEl.value = '';
             }
         }
         
-        startQuizBtn.addEventListener('click', () => {
-            initializeAudio(); // 在第一次點擊時初始化所有音訊
-            if(backgroundMusic && backgroundMusic.state !== "started") {
-                backgroundMusic.start();
-            }
+        startQuizBtn.addEventListener('click', async () => {
+            await initializeAudio(); 
             playClickSound();
-            
             startQuizContainer.classList.add('hidden');
             quizSection.classList.remove('hidden');
-            
-            // **關鍵修復**：添加一個微小的延遲(100毫秒)
-            // 這給了瀏覽器足夠的時間來處理用戶的點擊並完全“解鎖”音訊功能，然後再嘗試播放第一個語音。
-            setTimeout(generateNewQuestion, 100);
+            generateNewQuestion();
         });
 
         newQuestionBtn.addEventListener('click', () => {
