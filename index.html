@@ -75,6 +75,9 @@
         </div>
     </div>
 
+    <!-- 静音音频元素，用于在移动浏览器上解锁音频上下文 -->
+    <audio id="unlock-audio" src="data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhIAAAAAA=" preload="auto"></audio>
+
     <script>
         const tableContainer = document.getElementById('multiplication-table');
 
@@ -136,6 +139,7 @@
         const checkAnswerBtn = document.getElementById('check-answer-btn');
         const newQuestionBtn = document.getElementById('new-question-btn');
         const quizFeedbackEl = document.getElementById('quiz-feedback');
+        const unlockAudioEl = document.getElementById('unlock-audio');
 
         let currentNum1, currentNum2;
 
@@ -184,12 +188,16 @@
             } else {
                 quizFeedbackEl.textContent = '不对哦，再想一想！🤔';
                 quizFeedbackEl.className = 'mt-4 text-lg h-8 text-amber-400 font-bold';
-                speak("不对哦，再想一想");
+                speak("不对哦，再想一-想");
                 quizAnswerEl.value = '';
             }
         }
         
         startQuizBtn.addEventListener('click', () => {
+            // 播放静音音频以解锁音频上下文
+            // 这是移动浏览器自动播放策略的常见解决方法
+            unlockAudioEl.play().catch(e => console.error("音频解锁失败", e));
+
             startQuizContainer.classList.add('hidden');
             quizSection.classList.remove('hidden');
             generateNewQuestion();
