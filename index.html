@@ -27,7 +27,7 @@
         }
         
         /* 为按钮添加简单的点击动画效果 */
-        .btn-speak, #check-answer-btn, #new-question-btn {
+        .btn-speak, #check-answer-btn, #new-question-btn, #start-quiz-btn {
             transition: all 0.2s ease-in-out;
         }
         .btn-speak {
@@ -39,7 +39,7 @@
         .btn-speak:hover {
             box-shadow: 0 0 15px rgba(107, 114, 128, 0.5);
         }
-        #check-answer-btn:active, #new-question-btn:active {
+        #check-answer-btn:active, #new-question-btn:active, #start-quiz-btn:active {
              transform: scale(0.95);
         }
     </style>
@@ -47,8 +47,14 @@
 <body class="flex items-center justify-center min-h-screen p-4">
     <div class="container mx-auto text-center">
         
-        <!-- 测验部分 -->
-        <div id="quiz-section" class="mb-10 p-6 rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 shadow-lg w-full max-w-md mx-auto">
+        <!-- 测验启动按钮 -->
+        <div id="start-quiz-container" class="mb-10 p-6 rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 shadow-lg w-full max-w-md mx-auto">
+            <h2 class="text-2xl font-bold text-cyan-300 mb-4">准备好了吗？</h2>
+            <button id="start-quiz-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-4 rounded-lg text-xl">开始挑战！</button>
+        </div>
+
+        <!-- 测验部分 (初始隐藏) -->
+        <div id="quiz-section" class="hidden mb-10 p-6 rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 shadow-lg w-full max-w-md mx-auto">
             <h2 class="text-2xl font-bold text-cyan-300 mb-4">乘法挑战</h2>
             <div id="quiz-question" class="text-4xl font-bold text-white mb-2 h-12"></div>
             <div id="quiz-mnemonic-hint" class="text-xl text-gray-300 mb-4 h-8"></div>
@@ -74,7 +80,6 @@
 
         // --- 动态背景代码 ---
         document.addEventListener('DOMContentLoaded', function() {
-            // 定义一个包含多个高质量背景图片URL的数组
             const backgrounds = [
                 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop',
                 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop',
@@ -82,12 +87,8 @@
                 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=1844&auto=format&fit=crop',
                 'https://images.unsplash.com/photo-1506443432602-ac2fcd6f54e0?q=80&w=1974&auto=format&fit=crop'
             ];
-
-            // 随机选择一张图片
             const randomIndex = Math.floor(Math.random() * backgrounds.length);
             const selectedImage = backgrounds[randomIndex];
-
-            // 设置背景图片
             document.body.style.backgroundImage = `url(${selectedImage})`;
         });
         // --- 动态背景代码结束 ---
@@ -105,9 +106,7 @@
             9: { 9: "九九八十一" }
         };
 
-        // 为每个数字定义一个宇宙主题的表情符号
         const spaceEmojis = ["☀️", "🚀", "🪐", "🌎", "🌟", "☄️", "🌕", "🌌", "👽"];
-        // 定义一个宇宙主题的颜色方案
         const spaceColors = [
             'bg-indigo-600 hover:bg-indigo-500', 'bg-sky-600 hover:bg-sky-500',
             'bg-rose-600 hover:bg-rose-500', 'bg-emerald-600 hover:bg-emerald-500',
@@ -116,10 +115,6 @@
             'bg-fuchsia-600 hover:bg-fuchsia-500'
         ];
 
-        /**
-         * 文本转语音函数
-         * @param {string} text - 需要朗读的文本
-         */
         function speak(text, onEndCallback) {
             speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
@@ -132,6 +127,9 @@
         }
 
         // --- 测验部分代码 ---
+        const startQuizContainer = document.getElementById('start-quiz-container');
+        const startQuizBtn = document.getElementById('start-quiz-btn');
+        const quizSection = document.getElementById('quiz-section');
         const quizQuestionEl = document.getElementById('quiz-question');
         const quizMnemonicHintEl = document.getElementById('quiz-mnemonic-hint');
         const quizAnswerEl = document.getElementById('quiz-answer');
@@ -150,13 +148,10 @@
             const mnemonic = mnemonics[smallerNum][largerNum];
             
             let mnemonicQuestion;
-            // 根据口诀中是否包含“得”字来生成不同的问题提示
             if (mnemonic.includes('得')) {
-                // 如果是“二三得六”，则提示变为“二三得?”
                 const questionPartEnd = mnemonic.indexOf('得') + 1;
                 mnemonicQuestion = mnemonic.substring(0, questionPartEnd) + '?';
             } else {
-                // 如果是“三四十二”，则提示变为“三四?”
                 mnemonicQuestion = mnemonic.slice(0, 2) + '?';
             }
 
@@ -173,10 +168,9 @@
         }
 
         function checkAnswer() {
-            if (quizAnswerEl.disabled) return; // 防止重复点击
+            if (quizAnswerEl.disabled) return;
             const userAnswer = parseInt(quizAnswerEl.value, 10);
             const correctAnswer = currentNum1 * currentNum2;
-
             const smallerNum = Math.min(currentNum1, currentNum2);
             const largerNum = Math.max(currentNum1, currentNum2);
             const fullMnemonic = mnemonics[smallerNum][largerNum];
@@ -186,62 +180,49 @@
                 quizFeedbackEl.className = 'mt-4 text-lg h-8 text-green-400 font-bold';
                 quizAnswerEl.disabled = true;
                 checkAnswerBtn.disabled = true;
-
-                speak(fullMnemonic, () => {
-                    // 使用回调函数，在第一句话说完后播放表扬
-                    speak("太棒了！");
-                });
-                
+                speak(fullMnemonic, () => speak("太棒了！"));
             } else {
                 quizFeedbackEl.textContent = '不对哦，再想一想！🤔';
                 quizFeedbackEl.className = 'mt-4 text-lg h-8 text-amber-400 font-bold';
                 speak("不对哦，再想一想");
-                quizAnswerEl.value = ''; // 答错了就清空输入框
+                quizAnswerEl.value = '';
             }
         }
+        
+        startQuizBtn.addEventListener('click', () => {
+            startQuizContainer.classList.add('hidden');
+            quizSection.classList.remove('hidden');
+            generateNewQuestion();
+        });
 
         newQuestionBtn.addEventListener('click', generateNewQuestion);
         checkAnswerBtn.addEventListener('click', checkAnswer);
         quizAnswerEl.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                checkAnswer();
-            }
+            if (event.key === 'Enter') checkAnswer();
         });
-
-        // 页面加载时出第一道题
-        generateNewQuestion();
-        // --- 测验代码结束 ---
-
 
         // --- 口诀表生成代码 ---
         for (let i = 1; i <= 9; i++) {
             for (let j = 1; j <= 9; j++) {
                 const button = document.createElement('button');
                 const colorClass = spaceColors[(i - 1) % spaceColors.length];
-                
                 button.className = `btn-speak ${colorClass} text-white font-bold p-2 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 flex flex-col items-center justify-center aspect-square`;
-
                 const emoji_i = spaceEmojis[i - 1];
-
                 button.innerHTML = `
                     <div class="text-3xl sm:text-4xl" aria-hidden="true">${emoji_i}</div>
                     <div class="text-sm sm:text-base mt-1 font-semibold">${i} × ${j} = ${i * j}</div>
                 `;
-                
                 button.setAttribute('aria-label', `${i} 乘 ${j} 等于 ${i*j}。口诀是：${mnemonics[Math.min(i,j)][Math.max(i,j)]}`);
-
                 button.addEventListener('click', () => {
                     const num1 = Math.min(i, j);
                     const num2 = Math.max(i, j);
                     const mnemonic = mnemonics[num1][num2];
                     speak(mnemonic);
                 });
-
                 tableContainer.appendChild(button);
             }
         }
     </script>
 </body>
 </html>
-
 
