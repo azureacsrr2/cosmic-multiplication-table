@@ -75,8 +75,7 @@
         </div>
     </div>
 
-    <!-- 静音音频元素，用于在移动浏览器上解锁音频上下文 -->
-    <audio id="unlock-audio" src="data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhIAAAAAA=" preload="auto"></audio>
+    <!-- 移除了会导致错误的静音音频元素 -->
 
     <script>
         const tableContainer = document.getElementById('multiplication-table');
@@ -139,7 +138,9 @@
         const checkAnswerBtn = document.getElementById('check-answer-btn');
         const newQuestionBtn = document.getElementById('new-question-btn');
         const quizFeedbackEl = document.getElementById('quiz-feedback');
-        const unlockAudioEl = document.getElementById('unlock-audio');
+        
+        // 为音频解锁创建一个变量
+        let audioCtx;
 
         let currentNum1, currentNum2;
 
@@ -194,9 +195,17 @@
         }
         
         startQuizBtn.addEventListener('click', () => {
-            // 播放静音音频以解锁音频上下文
-            // 这是移动浏览器自动播放策略的常见解决方法
-            unlockAudioEl.play().catch(e => console.error("音频解锁失败", e));
+            // 这是在移动浏览器上解锁音频的更可靠的方法
+            if (!audioCtx) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                } catch (e) {
+                    console.error("无法创建或恢复音频上下文", e);
+                }
+            }
 
             startQuizContainer.classList.add('hidden');
             quizSection.classList.remove('hidden');
