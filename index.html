@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入中文字体以优化显示 -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- **新功能**：引入Tone.js库来创建音效和音乐 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         /* 使用更适合中文的字体 */
         body {
@@ -75,8 +77,6 @@
         </div>
     </div>
 
-    <!-- 移除了会导致错误的静音音频元素 -->
-
     <script>
         const tableContainer = document.getElementById('multiplication-table');
 
@@ -117,16 +117,67 @@
             'bg-fuchsia-600 hover:bg-fuchsia-500'
         ];
 
+        let currentAudio = null;
+
         function speak(text, onEndCallback) {
-            speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'zh-CN';
-            utterance.rate = 0.9;
-            if (onEndCallback) {
-                utterance.onend = onEndCallback;
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
             }
-            speechSynthesis.speak(utterance);
+            const encodedText = encodeURIComponent(text);
+            const apiUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=zh-CN&client=tw-ob`;
+            currentAudio = new Audio(apiUrl);
+            if (onEndCallback) {
+                currentAudio.addEventListener('ended', onEndCallback, { once: true });
+            }
+            currentAudio.play().catch(e => console.error("音频播放失败:", e));
         }
+
+        // --- **新功能**：音效和音乐 ---
+        let synth, backgroundMusic;
+
+        // 正确的音效
+        function playCorrectSound() {
+            if (!synth) return;
+            synth.triggerAttackRelease("C5", "8n", Tone.now());
+            synth.triggerAttackRelease("E5", "8n", Tone.now() + 0.1);
+            synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.2);
+        }
+
+        // 错误的音效
+        function playIncorrectSound() {
+            if (!synth) return;
+            synth.triggerAttackRelease("C3", "8n", Tone.now());
+        }
+        
+        // 点击的音效
+        function playClickSound() {
+            if (!synth) return;
+            synth.triggerAttackRelease("C6", "16n");
+        }
+        
+        // 初始化所有声音
+        function initializeAudio() {
+             // 创建一个合成器用于音效
+            synth = new Tone.Synth({
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
+            }).toDestination();
+            
+            // 创建背景音乐
+            backgroundMusic = new Tone.Player({
+                url: "https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus/0000_Sitar_0_84_11.mp3", // 使用一个安静平和的乐器声作为背景
+                loop: true,
+                autostart: true,
+                volume: -20, // 将音量调低，不干扰学习
+                fadeIn: 2,
+            }).toDestination();
+            
+            // 确保Tone.js在用户交互后启动
+            Tone.start();
+        }
+        // --- 音效代码结束 ---
+
 
         // --- 测验部分代码 ---
         const startQuizContainer = document.getElementById('start-quiz-container');
@@ -139,9 +190,6 @@
         const newQuestionBtn = document.getElementById('new-question-btn');
         const quizFeedbackEl = document.getElementById('quiz-feedback');
         
-        // 为音频解锁创建一个变量
-        let audioCtx;
-
         let currentNum1, currentNum2;
 
         function generateNewQuestion() {
@@ -149,9 +197,7 @@
             currentNum2 = Math.floor(Math.random() * 9) + 1;
             const smallerNum = Math.min(currentNum1, currentNum2);
             const largerNum = Math.max(currentNum1, currentNum2);
-
             const mnemonic = mnemonics[smallerNum][largerNum];
-            
             let mnemonicQuestion;
             if (mnemonic.includes('得')) {
                 const questionPartEnd = mnemonic.indexOf('得') + 1;
@@ -159,17 +205,14 @@
             } else {
                 mnemonicQuestion = mnemonic.slice(0, 2) + '?';
             }
-
             quizQuestionEl.textContent = `${currentNum1} × ${currentNum2} = ?`;
             quizMnemonicHintEl.textContent = `${mnemonicQuestion}？`;
-            
             quizAnswerEl.value = '';
             quizAnswerEl.disabled = false;
             checkAnswerBtn.disabled = false;
             quizFeedbackEl.textContent = '';
             quizFeedbackEl.className = 'mt-4 text-lg h-8'; 
-
-            speak(`${mnemonicQuestion}... 请答题`);
+            speak(`${mnemonicQuestion}，请答题`);
         }
 
         function checkAnswer() {
@@ -181,32 +224,23 @@
             const fullMnemonic = mnemonics[smallerNum][largerNum];
 
             if (userAnswer === correctAnswer) {
+                playCorrectSound(); // 播放正确的音效
                 quizFeedbackEl.textContent = '答对了！你真棒！🥳';
                 quizFeedbackEl.className = 'mt-4 text-lg h-8 text-green-400 font-bold';
                 quizAnswerEl.disabled = true;
                 checkAnswerBtn.disabled = true;
                 speak(fullMnemonic, () => speak("太棒了！"));
             } else {
+                playIncorrectSound(); // 播放错误的音效
                 quizFeedbackEl.textContent = '不对哦，再想一想！🤔';
                 quizFeedbackEl.className = 'mt-4 text-lg h-8 text-amber-400 font-bold';
-                speak("不对哦，再想一-想");
+                speak("不对哦，再想一想");
                 quizAnswerEl.value = '';
             }
         }
         
         startQuizBtn.addEventListener('click', () => {
-            // 这是在移动浏览器上解锁音频的更可靠的方法
-            if (!audioCtx) {
-                try {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    if (audioCtx.state === 'suspended') {
-                        audioCtx.resume();
-                    }
-                } catch (e) {
-                    console.error("无法创建或恢复音频上下文", e);
-                }
-            }
-
+            initializeAudio(); // 在第一次点击时初始化所有音频
             startQuizContainer.classList.add('hidden');
             quizSection.classList.remove('hidden');
             generateNewQuestion();
@@ -231,6 +265,7 @@
                 `;
                 button.setAttribute('aria-label', `${i} 乘 ${j} 等于 ${i*j}。口诀是：${mnemonics[Math.min(i,j)][Math.max(i,j)]}`);
                 button.addEventListener('click', () => {
+                    playClickSound(); // 播放点击音效
                     const num1 = Math.min(i, j);
                     const num2 = Math.max(i, j);
                     const mnemonic = mnemonics[num1][num2];
@@ -239,6 +274,12 @@
                 tableContainer.appendChild(button);
             }
         }
+        
+        // 为所有按钮添加点击音效
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', playClickSound);
+        });
+
     </script>
 </body>
 </html>
