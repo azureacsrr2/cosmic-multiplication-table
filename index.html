@@ -242,13 +242,16 @@
         startQuizBtn.addEventListener('click', () => {
             initializeAudio(); // 在第一次點擊時初始化所有音訊
             if(backgroundMusic && backgroundMusic.state !== "started") {
-                backgroundMusic.start(); // **修復**：確保音樂只在初始化後啟動
+                backgroundMusic.start();
             }
             playClickSound();
             
             startQuizContainer.classList.add('hidden');
             quizSection.classList.remove('hidden');
-            generateNewQuestion();
+            
+            // **關鍵修復**：添加一個微小的延遲(100毫秒)
+            // 這給了瀏覽器足夠的時間來處理用戶的點擊並完全“解鎖”音訊功能，然後再嘗試播放第一個語音。
+            setTimeout(generateNewQuestion, 100);
         });
 
         newQuestionBtn.addEventListener('click', () => {
