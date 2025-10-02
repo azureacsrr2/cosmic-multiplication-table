@@ -142,20 +142,32 @@
         let isAudioInitialized = false;
 
         function playCorrectSound() {
-            if (!synth) return;
-            synth.triggerAttackRelease("C5", "8n", Tone.now());
-            synth.triggerAttackRelease("E5", "8n", Tone.now() + 0.1);
-            synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.2);
+            try {
+                if (!synth) return;
+                synth.triggerAttackRelease("C5", "8n", Tone.now());
+                synth.triggerAttackRelease("E5", "8n", Tone.now() + 0.1);
+                synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.2);
+            } catch (e) {
+                console.error("正確音效播放失敗:", e);
+            }
         }
 
         function playIncorrectSound() {
-            if (!synth) return;
-            synth.triggerAttackRelease("C3", "8n", Tone.now());
+            try {
+                if (!synth) return;
+                synth.triggerAttackRelease("C3", "8n", Tone.now());
+            } catch (e) {
+                console.error("錯誤音效播放失敗:", e);
+            }
         }
         
         function playClickSound() {
-            if (!synth) return;
-            synth.triggerAttackRelease("C6", "16n");
+            try {
+                if (!synth) return;
+                synth.triggerAttackRelease("C6", "16n");
+            } catch(e) {
+                console.error("點擊音效播放失敗:", e);
+            }
         }
         
         async function initializeAudio() {
@@ -236,18 +248,10 @@
                 checkAnswerBtn.disabled = true;
                 speak(fullMnemonic, () => speak("太棒了！"));
             } else {
-                // **關鍵修復**：重新排序操作以確保穩定性
-                // 1. 首先，立即顯示視覺回饋
                 quizFeedbackEl.textContent = '不對喔，再想一想！🤔';
                 quizFeedbackEl.className = 'mt-4 text-lg h-8 text-amber-400 font-bold';
-                
-                // 2. 播放語音提示
                 speak("不對喔，再想一想");
-
-                // 3. 最後才播放可能會出錯的音效
                 playIncorrectSound();
-                
-                // 4. 清空輸入框
                 quizAnswerEl.value = '';
             }
         }
