@@ -1,302 +1,344 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宇宙乘法口訣表</title>
-    <!-- 引入Tailwind CSS以進行樣式設計 -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入中文字體以優化顯示 -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- 引入Tone.js庫來創建音效和音樂 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-    <style>
-        /* 使用更適合中文的字體 */
-        body {
-            font-family: 'Inter', 'Noto Sans SC', sans-serif;
-            /* 設定一個後備的深色背景，以防圖片載入失敗 */
-            background-color: #0f172a;
-            /* 背景圖片將由JavaScript動態設定 */
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            /* 為背景圖片的切換添加一個平滑的淡入效果 */
-            transition: background-image 1s ease-in-out;
-        }
-        /* 為標題和段落添加文本陰影以提高在背景圖片上的可讀性 */
-        h1, .container > p {
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
-        }
-        
-        /* 為按鈕添加簡單的點擊動畫效果 */
-        .btn-speak, #check-answer-btn, #new-question-btn, #start-quiz-btn {
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-speak {
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .btn-speak:active {
-            transform: scale(0.95) rotate(-2deg); /* 點擊時增加一個可愛的旋轉效果 */
-        }
-        .btn-speak:hover {
-            box-shadow: 0 0 15px rgba(107, 114, 128, 0.5);
-        }
-        #check-answer-btn:active, #new-question-btn:active, #start-quiz-btn:active {
-             transform: scale(0.95);
-        }
-    </style>
+<meta charset="UTF--8">
+<title>宇宙乘法口诀表 (增强版)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: system-ui,-apple-system,'Noto Sans SC','Inter',sans-serif; background:#0f172a; color:#fff; transition:background-image 1s }
+  h1 { text-shadow:2px 2px 8px rgba(0,0,0,.6) }
+  .btn { transition:.15s; }
+  .btn:active { transform:scale(.95) }
+  .grid-btn:active { transform:scale(.92) rotate(-2deg) }
+  .voice-badge { font-size:.7rem;padding:2px 6px;border:1px solid #555;border-radius:999px;margin-left:6px }
+
+  /* Correct answer animation */
+  .correct-answer { animation: tada 1s; }
+  @keyframes tada {
+    from { transform: scale3d(1, 1, 1); }
+    10%, 20% { transform: scale3d(0.9, 0.9, 0.9) rotate3d(0, 0, 1, -3deg); }
+    30%, 50%, 70%, 90% { transform: scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, 3deg); }
+    40%, 60%, 80% { transform: scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, -3deg); }
+    to { transform: scale3d(1, 1, 1); }
+  }
+</style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
-    <div class="container mx-auto text-center">
-        
-        <!-- 測驗啟動按鈕 -->
-        <div id="start-quiz-container" class="mb-10 p-6 rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 shadow-lg w-full max-w-md mx-auto">
-            <h2 class="text-2xl font-bold text-cyan-300 mb-4">準備好了嗎？</h2>
-            <button id="start-quiz-btn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-4 rounded-lg text-xl">開始挑戰！</button>
-        </div>
-
-        <!-- 測驗部分 (初始隱藏) -->
-        <div id="quiz-section" class="hidden mb-10 p-6 rounded-2xl bg-slate-800/80 backdrop-blur-sm border border-slate-700 shadow-lg w-full max-w-md mx-auto">
-            <h2 class="text-2xl font-bold text-cyan-300 mb-4">乘法挑戰</h2>
-            <div id="quiz-question" class="text-4xl font-bold text-white mb-2 h-12"></div>
-            <div id="quiz-mnemonic-hint" class="text-xl text-gray-300 mb-4 h-8"></div>
-            <div class="flex items-center justify-center gap-4">
-                <input type="number" id="quiz-answer" class="text-center text-2xl font-bold w-24 h-14 rounded-lg bg-slate-900 text-white border-2 border-slate-600 focus:border-cyan-400 focus:ring-0" placeholder="?">
-                <button id="check-answer-btn" class="w-24 h-14 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-lg rounded-lg">確認</button>
-            </div>
-            <div id="quiz-feedback" class="mt-4 text-lg h-8"></div>
-            <button id="new-question-btn" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg">下一題</button>
-        </div>
-
-        <h1 class="text-4xl font-bold mb-2 text-cyan-400 tracking-wider">宇宙乘法口訣表</h1>
-        <p class="text-gray-300 mb-8">點擊下方的按鈕，探索乘法口訣的奧秘！</p>
-        
-        <!-- 乘法口訣表的容器 -->
-        <div id="multiplication-table" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-9 gap-3 md:gap-4 max-w-5xl mx-auto">
-            <!-- 按鈕將由下方的JavaScript程式碼動態產生 -->
-        </div>
+<body class="min-h-screen p-4 flex flex-col items-center">
+<div class="w-full max-w-5xl">
+  <!-- Header Section -->
+  <div class="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between mb-4">
+    <div>
+      <h1 class="text-3xl md:text-4xl font-bold text-cyan-300">🚀 宇宙乘法口诀表</h1>
+      <p class="text-slate-300 mt-1">点按钮朗读口诀，或接受挑战吧！</p>
     </div>
+    <!-- Voice Controls Panel -->
+    <div class="bg-slate-800/70 border border-slate-600 rounded-xl p-3 flex flex-col gap-2 w-full md:w-80">
+      <div class="flex items-center justify-between">
+        <label class="text-sm text-slate-300">语音 (Voice)</label>
+        <span id="voice-status" class="text-xs text-amber-300">加载语音中...</span>
+      </div>
+      <select id="voice-select" class="w-full bg-slate-900 border border-slate-600 rounded-md px-2 py-1 text-sm"></select>
+      <div class="flex gap-2">
+        <button id="btn-test" class="btn flex-1 bg-emerald-600 hover:bg-emerald-500 rounded-md py-2 text-sm font-semibold">测试发声</button>
+        <button id="btn-count" class="btn flex-1 bg-indigo-600 hover:bg-indigo-500 rounded-md py-2 text-sm font-semibold">火箭倒计时</button>
+      </div>
+      <label class="flex items-center gap-2 text-xs text-slate-300">
+        <input type="checkbox" id="slow-mode" /> 放慢语速
+      </label>
+      <div id="sound-tip" class="text-[11px] text-slate-400 leading-snug">
+        若仍无声音：1) 确认设备未静音 2) 换 Chrome 3) 先点“测试发声”.
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const tableContainer = document.getElementById('multiplication-table');
+  <!-- Quiz Start -->
+  <div id="start-quiz" class="mb-6 bg-slate-800/70 border border-slate-600 rounded-2xl p-6 text-center">
+    <h2 class="text-xl font-bold text-cyan-300 mb-2">准备好挑战了吗？</h2>
+    <button id="start-btn" class="btn w-full bg-rose-600 hover:bg-rose-500 py-3 rounded-lg font-semibold text-lg">开始挑战！</button>
+  </div>
 
-        // --- 每日必應壁紙 ---
-        document.addEventListener('DOMContentLoaded', function() {
-            // 使用一個可靠的API來獲取必應每日壁紙
-            const bingApiUrl = 'https://bing.biturl.top/?resolution=1920&format=json&index=0&mkt=zh-CN';
-            
-            fetch(bingApiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.url) {
-                        document.body.style.backgroundImage = `url(${data.url})`;
-                    }
-                })
-                .catch(error => {
-                    console.error("無法載入必應壁紙:", error);
-                });
-        });
-        // --- 每日壁紙程式碼結束 ---
+  <!-- Quiz Area -->
+  <div id="quiz-area" class="hidden mb-6 bg-slate-800/70 border border-slate-600 rounded-2xl p-6">
+    <div class="flex justify-between items-center mb-2">
+        <h3 class="text-xl font-bold text-cyan-300">乘法挑战</h3>
+        <div id="quiz-score" class="text-lg font-semibold text-slate-300">得分: 0 / 0</div>
+    </div>
+    <div id="quiz-q" class="text-4xl font-bold mb-2 h-12"></div>
+    <div id="quiz-hint" class="text-lg text-slate-300 mb-4 h-8"></div>
+    <div class="flex items-center gap-3 justify-center">
+      <input id="quiz-answer" type="number" class="w-24 h-14 text-center text-2xl font-bold rounded-lg bg-slate-900 border border-slate-600 focus:border-cyan-400 outline-none">
+      <button id="btn-check" class="btn w-28 h-14 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-semibold">确认</button>
+    </div>
+    <!-- ARIA-live for screen readers to announce feedback -->
+    <div id="quiz-feedback" aria-live="polite" class="mt-4 h-8 text-lg font-semibold"></div>
+    <button id="btn-next" class="btn w-full mt-4 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-lg font-semibold hidden">下一题</button>
+  </div>
 
-        // 定義中文乘法口訣的資料物件
-        const mnemonics = {
-            1: { 1: "一一得一", 2: "一二得二", 3: "一三得三", 4: "一四得四", 5: "一五得五", 6: "一六得六", 7: "一七得七", 8: "一八得八", 9: "一九得九" },
-            2: { 2: "二二得四", 3: "二三得六", 4: "二四得八", 5: "二五一十", 6: "二六十二", 7: "二七十四", 8: "二八十六", 9: "二九十八" },
-            3: { 3: "三三得九", 4: "三四十二", 5: "三五十五", 6: "三六十八", 7: "三七二十一", 8: "三八二十四", 9: "三九二十七" },
-            4: { 4: "四四十六", 5: "四五二十", 6: "四六二十四", 7: "四七二十八", 8: "四八三十二", 9: "四九三十六" },
-            5: { 5: "五五二十五", 6: "五六三十", 7: "五七三十五", 8: "五八四十", 9: "五九四十五" },
-            6: { 6: "六六三十六", 7: "六七四十二", 8: "六八四十八", 9: "六九五十四" },
-            7: { 7: "七七四十九", 8: "七八五十六", 9: "七九六十三" },
-            8: { 8: "八八六十四", 9: "八九七十二" },
-            9: { 9: "九九八十一" }
-        };
+  <!-- Multiplication Table -->
+  <div id="table" class="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-9 gap-3 md:gap-4 mb-10"></div>
+</div>
 
-        const spaceEmojis = ["☀️", "🚀", "🪐", "🌎", "🌟", "☄️", "🌕", "🌌", "👽"];
-        const spaceColors = [
-            'bg-indigo-600 hover:bg-indigo-500', 'bg-sky-600 hover:bg-sky-500',
-            'bg-rose-600 hover:bg-rose-500', 'bg-emerald-600 hover:bg-emerald-500',
-            'bg-purple-600 hover:bg-purple-500', 'bg-amber-600 hover:bg-amber-500',
-            'bg-cyan-600 hover:bg-cyan-500', 'bg-violet-600 hover:bg-violet-500',
-            'bg-fuchsia-600 hover:bg-fuchsia-500'
-        ];
+<script>
+// --- SECTION: INITIAL SETUP ---
 
-        let currentAudio = null;
+// Dynamic Space Background Image
+const bgs = [
+  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1400',
+  'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?auto=format&fit=crop&w=1400',
+  'https://images.unsplash.com/photo-1446776811953-b23d5795b4e6?auto=format&fit=crop&w=1400',
+  'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=1400'
+];
+document.body.style.backgroundImage = `url(${bgs[Math.floor(Math.random()*bgs.length)]})`;
 
-        function speak(text, onEndCallback) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-            }
-            const encodedText = encodeURIComponent(text);
-            const apiUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=zh-CN&client=tw-ob`;
-            currentAudio = new Audio(apiUrl);
-            currentAudio.playbackRate = 1.2;
-            if (onEndCallback) {
-                currentAudio.addEventListener('ended', onEndCallback, { once: true });
-            }
-            currentAudio.play().catch(e => console.error("音訊播放失敗:", e));
-        }
+// Chinese Multiplication Mnemonics Data
+const mnemonics = {
+  1:{1:"一一得一",2:"一二得二",3:"一三得三",4:"一四得四",5:"一五得五",6:"一六得六",7:"一七得七",8:"一八得八",9:"一九得九"},
+  2:{2:"二二得四",3:"二三得六",4:"二四得八",5:"二五一十",6:"二六十二",7:"二七十四",8:"二八十六",9:"二九十八"},
+  3:{3:"三三得九",4:"三四十二",5:"三五十五",6:"三六十八",7:"三七二十一",8:"三八二十四",9:"三九二十七"},
+  4:{4:"四四十六",5:"四五二十",6:"四六二十四",7:"四七二十八",8:"四八三十二",9:"四九三十六"},
+  5:{5:"五五二十五",6:"五六三十",7:"五七三十五",8:"五八四十",9:"五九四十五"},
+  6:{6:"六六三十六",7:"六七四十二",8:"六八四十八",9:"六九五十四"},
+  7:{7:"七七四十九",8:"七八五十六",9:"七九六十三"},
+  8:{8:"八八六十四",9:"八九七十二"},
+  9:{9:"九九八十一"}
+};
 
-        // --- 音效和音樂 ---
-        let synth, backgroundMusic;
-        let isAudioInitialized = false;
+// --- SECTION: SPEECH SYNTHESIS SETUP ---
 
-        function playCorrectSound() {
-            try {
-                if (!synth) return;
-                synth.triggerAttackRelease("C5", "8n", Tone.now());
-                synth.triggerAttackRelease("E5", "8n", Tone.now() + 0.1);
-                synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.2);
-            } catch (e) {
-                console.error("正確音效播放失敗:", e);
-            }
-        }
+const voiceSelect = document.getElementById('voice-select');
+const voiceStatus = document.getElementById('voice-status');
+const slowMode = document.getElementById('slow-mode');
+let voices = [];
+let currentVoice = null;
+let voicesReady = false;
 
-        function playIncorrectSound() {
-            try {
-                if (!synth) return;
-                synth.triggerAttackRelease("C3", "8n", Tone.now());
-            } catch (e) {
-                console.error("錯誤音效播放失敗:", e);
-            }
-        }
-        
-        function playClickSound() {
-            try {
-                if (!synth) return;
-                synth.triggerAttackRelease("C6", "16n");
-            } catch(e) {
-                console.error("點擊音效播放失敗:", e);
-            }
-        }
-        
-        async function initializeAudio() {
-            if(isAudioInitialized) return;
-            
-            await Tone.start();
-            console.log("音訊上下文已成功啟動！");
-            isAudioInitialized = true;
-             
-            synth = new Tone.Synth({
-                oscillator: { type: "sine" },
-                envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
-            }).toDestination();
-            
-            backgroundMusic = new Tone.Player({
-                url: "https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus/0000_Sitar_0_84_11.mp3",
-                loop: true,
-                volume: -20,
-                fadeIn: 2,
-            }).toDestination();
-            
-            if(backgroundMusic && backgroundMusic.state !== "started") {
-                backgroundMusic.start();
-            }
-        }
-        // --- 音效程式碼結束 ---
+/**
+ * Loads and populates the voice selection dropdown.
+ */
+function loadVoices() {
+  voices = speechSynthesis.getVoices();
+  if (!voices.length) return; // Exit if no voices are loaded yet
+  
+  voiceSelect.innerHTML = '';
+  voices
+    .sort((a, b) => a.lang.localeCompare(b.lang)) // Sort voices by language
+    .forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.name;
+      opt.textContent = `${v.name} (${v.lang})`;
+      // Highlight Chinese voices
+      if (/zh/i.test(v.lang)) opt.textContent += ' ★';
+      voiceSelect.appendChild(opt);
+    });
+    
+  // Automatically select a preferred Chinese voice, or the first available voice
+  const zh = voices.find(v => /zh/i.test(v.lang));
+  currentVoice = zh || voices[0];
+  voiceSelect.value = currentVoice.name;
+  
+  voicesReady = true;
+  voiceStatus.textContent = '语音已就绪';
+  voiceStatus.className = 'text-xs text-emerald-300';
+}
 
-        // --- 測驗部分程式碼 ---
-        const startQuizContainer = document.getElementById('start-quiz-container');
-        const startQuizBtn = document.getElementById('start-quiz-btn');
-        const quizSection = document.getElementById('quiz-section');
-        const quizQuestionEl = document.getElementById('quiz-question');
-        const quizMnemonicHintEl = document.getElementById('quiz-mnemonic-hint');
-        const quizAnswerEl = document.getElementById('quiz-answer');
-        const checkAnswerBtn = document.getElementById('check-answer-btn');
-        const newQuestionBtn = document.getElementById('new-question-btn');
-        const quizFeedbackEl = document.getElementById('quiz-feedback');
-        
-        let currentNum1, currentNum2;
+// Load voices when they are ready. Use a timeout as a fallback.
+speechSynthesis.onvoiceschanged = loadVoices;
+setTimeout(loadVoices, 400);
 
-        function generateNewQuestion() {
-            currentNum1 = Math.floor(Math.random() * 9) + 1;
-            currentNum2 = Math.floor(Math.random() * 9) + 1;
-            const smallerNum = Math.min(currentNum1, currentNum2);
-            const largerNum = Math.max(currentNum1, currentNum2);
-            const mnemonic = mnemonics[smallerNum][largerNum];
-            let mnemonicQuestion;
-            if (mnemonic.includes('得')) {
-                const questionPartEnd = mnemonic.indexOf('得') + 1;
-                mnemonicQuestion = mnemonic.substring(0, questionPartEnd) + '？';
-            } else {
-                mnemonicQuestion = mnemonic.slice(0, 2) + '？';
-            }
-            quizQuestionEl.textContent = `${currentNum1} × ${currentNum2} = ?`;
-            quizMnemonicHintEl.textContent = mnemonicQuestion;
-            quizAnswerEl.value = '';
-            quizAnswerEl.disabled = false;
-            checkAnswerBtn.disabled = false;
-            quizFeedbackEl.textContent = '';
-            quizFeedbackEl.className = 'mt-4 text-lg h-8'; 
-            speak(`${mnemonicQuestion}，請答題`);
-        }
+/**
+ * A safe wrapper for the speechSynthesis.speak() function.
+ * @param {string} text - The text to be spoken.
+ * @param {object} [opts={}] - Optional parameters, e.g., onend callback.
+ */
+function speak(text, opts = {}) {
+  if (!text) return;
+  // If voices are not ready, queue the speech request
+  if (!voicesReady) {
+    setTimeout(() => speak(text, opts), 300);
+    return;
+  }
+  
+  speechSynthesis.cancel(); // Cancel any ongoing speech
+  const u = new SpeechSynthesisUtterance(text);
+  u.voice = currentVoice;
+  u.lang = currentVoice?.lang || 'zh-CN';
+  u.rate = slowMode.checked ? 0.8 : 0.95;
+  u.pitch = 1;
+  if (opts.onend) u.onend = opts.onend;
+  
+  try {
+    speechSynthesis.speak(u);
+  } catch (e) {
+    console.error("Speech synthesis failed.", e);
+  }
+}
 
-        function checkAnswer() {
-            playClickSound();
-            if (quizAnswerEl.disabled) return;
-            const userAnswer = parseInt(quizAnswerEl.value, 10);
-            const correctAnswer = currentNum1 * currentNum2;
-            const smallerNum = Math.min(currentNum1, currentNum2);
-            const largerNum = Math.max(currentNum1, currentNum2);
-            const fullMnemonic = mnemonics[smallerNum][largerNum];
+// Event listener for changing the selected voice
+voiceSelect.addEventListener('change', () => {
+  currentVoice = voices.find(v => v.name === voiceSelect.value) || currentVoice;
+  speak('语音已切换');
+});
 
-            if (userAnswer === correctAnswer) {
-                playCorrectSound();
-                quizFeedbackEl.textContent = '答對了！你真棒！🥳';
-                quizFeedbackEl.className = 'mt-4 text-lg h-8 text-green-400 font-bold';
-                quizAnswerEl.disabled = true;
-                checkAnswerBtn.disabled = true;
-                speak(fullMnemonic, () => speak("太棒了！"));
-            } else {
-                quizFeedbackEl.textContent = '不對喔，再想一想！🤔';
-                quizFeedbackEl.className = 'mt-4 text-lg h-8 text-amber-400 font-bold';
-                speak("不對喔，再想一想");
-                playIncorrectSound();
-                quizAnswerEl.value = '';
-            }
-        }
-        
-        startQuizBtn.addEventListener('click', async () => {
-            await initializeAudio(); 
-            playClickSound();
-            startQuizContainer.classList.add('hidden');
-            quizSection.classList.remove('hidden');
-            generateNewQuestion();
-        });
+// Event listeners for fun utility buttons
+document.getElementById('btn-test').addEventListener('click', () => {
+  speak('你好！让我们一起学习乘法口诀。');
+});
+document.getElementById('btn-count').addEventListener('click', async () => {
+  const seq = ['火箭倒计时开始', '3', '2', '1', '发射！'];
+  for (let w of seq) {
+    speak(w);
+    await new Promise(r => setTimeout(r, w.length > 1 ? 1100 : 900));
+  }
+});
 
-        newQuestionBtn.addEventListener('click', () => {
-            playClickSound();
-            generateNewQuestion();
-        });
+// --- SECTION: QUIZ LOGIC ---
 
-        checkAnswerBtn.addEventListener('click', checkAnswer);
-        quizAnswerEl.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') checkAnswer();
-        });
+const startBtn = document.getElementById('start-btn');
+const startBox = document.getElementById('start-quiz');
+const quizBox = document.getElementById('quiz-area');
+const scoreEl = document.getElementById('quiz-score');
+const qEl = document.getElementById('quiz-q');
+const hintEl = document.getElementById('quiz-hint');
+const ansEl = document.getElementById('quiz-answer');
+const btnCheck = document.getElementById('btn-check');
+const btnNext = document.getElementById('btn-next');
+const feedback = document.getElementById('quiz-feedback');
 
-        // --- 口訣表產生程式碼 ---
-        for (let i = 1; i <= 9; i++) {
-            for (let j = 1; j <= 9; j++) {
-                const button = document.createElement('button');
-                const colorClass = spaceColors[(i - 1) % spaceColors.length];
-                button.className = `btn-speak ${colorClass} text-white font-bold p-2 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-opacity-75 flex flex-col items-center justify-center aspect-square`;
-                const emoji_i = spaceEmojis[i - 1];
-                button.innerHTML = `
-                    <div class="text-3xl sm:text-4xl" aria-hidden="true">${emoji_i}</div>
-                    <div class="text-sm sm:text-base mt-1 font-semibold">${i} × ${j} = ${i * j}</div>
-                `;
-                button.setAttribute('aria-label', `${i} 乘 ${j} 等於 ${i*j}。口訣是：${mnemonics[Math.min(i,j)][Math.max(i,j)]}`);
-                button.addEventListener('click', () => {
-                    playClickSound();
-                    const num1 = Math.min(i, j);
-                    const num2 = Math.max(i, j);
-                    const mnemonic = mnemonics[num1][num2];
-                    speak(mnemonic);
-                });
-                tableContainer.appendChild(button);
-            }
-        }
-    </script>
+let n1 = 0, n2 = 0; // The two numbers in the current question
+let score = 0;
+let questionsAsked = 0;
+
+/**
+ * Generates and displays a new quiz question.
+ */
+function newQuestion() {
+  questionsAsked++;
+  updateScore();
+
+  n1 = Math.floor(Math.random() * 9) + 1;
+  n2 = Math.floor(Math.random() * 9) + 1;
+  const a = Math.min(n1, n2), b = Math.max(n1, n2);
+  const mnemonic = mnemonics[a][b];
+  let qHint = mnemonic.includes('得') ? mnemonic.split('得')[0] + '得 ?' : mnemonic.slice(0, 2) + '?';
+  
+  qEl.textContent = `${n1} × ${n2} = ?`;
+  hintEl.textContent = qHint;
+  ansEl.value = '';
+  feedback.textContent = '';
+  feedback.className = 'mt-4 h-8 text-lg font-semibold';
+  
+  // Reset UI for the new question
+  ansEl.disabled = false;
+  btnCheck.classList.remove('hidden');
+  btnNext.classList.add('hidden');
+  
+  speak(qHint + ' 请作答');
+  ansEl.focus();
+}
+
+/**
+ * Updates the score display.
+ */
+function updateScore() {
+    scoreEl.textContent = `得分: ${score} / ${questionsAsked - 1}`;
+}
+
+/**
+ * Checks the user's answer.
+ */
+function check() {
+  const val = parseInt(ansEl.value, 10);
+  if (isNaN(val)) return; // Ignore if input is not a number
+
+  // Disable controls after answering
+  ansEl.disabled = true;
+  btnCheck.classList.add('hidden');
+  
+  const correct = n1 * n2;
+  const a = Math.min(n1, n2), b = Math.max(n1, n2);
+  const fullMnemonic = mnemonics[a][b];
+  
+  if (val === correct) {
+    score++;
+    feedback.textContent = '答对啦！🥳';
+    feedback.className = 'mt-4 h-8 text-lg text-green-400 font-bold correct-answer';
+    speak(fullMnemonic, {
+      onend: () => {
+        speak('太棒了！');
+        // Automatically move to the next question after a short delay
+        setTimeout(newQuestion, 1500);
+      }
+    });
+  } else {
+    feedback.textContent = `不对哦，正确答案是 ${correct} 🤔`;
+    feedback.className = 'mt-4 h-8 text-lg text-amber-300 font-bold';
+    btnNext.classList.remove('hidden'); // Allow user to proceed manually
+    speak(`不对哦，${fullMnemonic}`);
+  }
+  updateScore(); // Update score display after checking
+}
+
+// Event Listeners for Quiz Buttons
+startBtn.addEventListener('click', () => {
+  startBox.classList.add('hidden');
+  quizBox.classList.remove('hidden');
+  // Reset score and start the first question
+  score = 0;
+  questionsAsked = 0;
+  newQuestion();
+});
+btnNext.addEventListener('click', newQuestion);
+btnCheck.addEventListener('click', check);
+ansEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') check();
+});
+
+
+// --- SECTION: MULTIPLICATION TABLE GENERATION ---
+
+const table = document.getElementById('table');
+const colors = [
+  'bg-indigo-600 hover:bg-indigo-500','bg-sky-600 hover:bg-sky-500',
+  'bg-rose-600 hover:bg-rose-500','bg-emerald-600 hover:bg-emerald-500',
+  'bg-purple-600 hover:bg-purple-500','bg-amber-600 hover:bg-amber-500',
+  'bg-cyan-600 hover:bg-cyan-500','bg-violet-600 hover:bg-violet-500',
+  'bg-fuchsia-600 hover:bg-fuchsia-500'
+];
+const emojis = ["☀️","🚀","🪐","🌎","🌟","☄️","🌕","🌌","👽"];
+
+// Loop to create all 81 buttons for the 9x9 table
+for (let i = 1; i <= 9; i++) {
+  for (let j = 1; j <= 9; j++) {
+    const btn = document.createElement('button');
+    btn.className = `grid-btn ${colors[(i - 1) % colors.length]} rounded-xl p-2 flex flex-col items-center justify-center aspect-square shadow-lg focus:outline-none focus:ring-2 focus:ring-cyan-400`;
+    
+    const a = Math.min(i, j), b = Math.max(i, j);
+    const m = mnemonics[a][b];
+    
+    btn.innerHTML = `<div class="text-2xl md:text-3xl">${emojis[(a-1)%emojis.length]}</div>
+                     <div class="mt-1 text-sm md:text-base font-semibold">${i}×${j}=${i*j}</div>`;
+                     
+    btn.setAttribute('aria-label', `${i} 乘 ${j} 等于 ${i*j}，口诀：${m}`);
+    btn.addEventListener('click', () => speak(m));
+    table.appendChild(btn);
+  }
+}
+
+// --- SECTION: AUDIO FIX FOR MOBILE BROWSERS ---
+
+/**
+ * Primes the audio context on the first user interaction, which is required
+ * by some mobile browsers (like Safari) to allow audio playback.
+ */
+document.addEventListener('click', function primeOnce() {
+  if (!voicesReady) loadVoices();
+  // Play a micro silent utterance to activate the audio context
+  const u = new SpeechSynthesisUtterance(' ');
+  try { speechSynthesis.speak(u); } catch(e){}
+  // Remove this event listener after it has run once
+  document.removeEventListener('click', primeOnce);
+}, { once: true });
+</script>
 </body>
 </html>
-
